@@ -11,12 +11,8 @@ Este projeto automatiza a transformação de vídeos do YouTube em shorts. Ele a
 - Baixa o último vídeo publicado
 - Transforma o vídeo em um short
 - Coleta descrições, tags, nome do canal e título do vídeo
-- Utiliza o serviço de Speech-to-Text do Google para gerar transcrições (sincronização de transcrições em desenvolvimento)
+- Utiliza o serviço de Speech-to-Text do Whisper para gerar transcrições
 - Adiciona música de fundo aos shorts
-
-## Próximos Passos
-
-- Implementar sincronização perfeita de cada transcrição gerada pelo Speech-to-Text do Google
 
 ## Como Usar
 

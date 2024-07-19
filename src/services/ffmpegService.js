@@ -61,8 +61,8 @@ class ffmpegService {
     let transcriptions = [];
     srtContent.segments.map((block) => {
       if (
-        Math.floor(block.start) >= startTime &&
-        Math.ceil(block.end) <= startTime + segmentDuration
+        block.start >= startTime &&
+        block.end <= startTime + segmentDuration
       ) {
         const text = this.splitText(block.text.trim());
         transcriptions.push({
