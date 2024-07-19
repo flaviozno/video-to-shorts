@@ -82,7 +82,7 @@ class ffmpegService {
     outputFilePath,
     index,
     audioPath,
-    audioVolume = 0.8,
+    audioVolume = 0.5,
     srtPath
   ) {
     const subtitles = this.getTranscription(
@@ -155,7 +155,7 @@ class ffmpegService {
     });
   }
 
-  async splitVideo(videoPath, srtPath) {
+  async splitVideo(videoPath, srtPath, videoId, channelName) {
     const segmentDuration = 60;
     const outputDir = path.resolve(this.__dirname, "shorts");
     const audioMusicDir = path.resolve(this.__dirname, "audios/default.mp3");
@@ -178,7 +178,10 @@ class ffmpegService {
 
         for (let i = 0; i < numSegments; i++) {
           const startTime = i * segmentDuration;
-          const outputFilePath = path.join(outputDir, `short_${i + 1}.mp4`);
+          const outputFilePath = path.join(
+            outputDir,
+            `${channelName}_${videoId}_${i + 1}.mp4`
+          );
           const segmentPromise = this.createSegment(
             videoPath,
             startTime,
