@@ -1,6 +1,6 @@
 node_modules/
 src/*.json
-src/transcriptions/*
+src/transcription/*
 *.mp4
 *.mp3
 *.wav

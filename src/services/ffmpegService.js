@@ -1,7 +1,6 @@
 import ffmpeg from "fluent-ffmpeg";
 import { exec } from "child_process";
 import path from "path";
-import SpeechTranscriber from "./speechService.js";
 import fs from "fs";
 
 const FFmpegPath = "C:\\ffmpeg\\bin\\ffmpeg.exe";
@@ -9,7 +8,6 @@ ffmpeg.setFfmpegPath(FFmpegPath);
 
 class ffmpegService {
   constructor(dirname) {
-    this.speech = new SpeechTranscriber(dirname);
     this.__dirname = dirname;
   }
 
@@ -38,63 +36,43 @@ class ffmpegService {
         .save(outputFile);
     });
   }
+  splitText(text, maxLength = 34) {
+    const words = text.split(" ");
+    let lines = [];
+    let currentLine = "";
 
-  async syncTranscriptions(startTime, segmentDuration, outputAudio, index) {
-    return new Promise((resolve, reject) => {
-      const audioSegmentPath = path.resolve(
-        this.__dirname,
-        "temp",
-        `audio_segment_${index}.wav`
-      );
-
-      ffmpeg(outputAudio)
-        .setStartTime(startTime)
-        .setDuration(segmentDuration)
-        .audioChannels(1)
-        .audioFrequency(16000)
-        .format("wav")
-        .save(audioSegmentPath)
-        .on("end", async () => {
-          const audioStream = fs.createReadStream(audioSegmentPath);
-          try {
-            const transcriptions = await this.speech.transcribeAudioStream(
-              audioStream,
-              index
-            );
-            const drawtextFilters = transcriptions.map((item) => {
-              return {
-                filter: "drawtext",
-                options: {
-                  fontfile: "Arial",
-                  text: item.transcription,
-                  fontsize: 48,
-                  fontcolor: "yellow",
-                  borderw: 2,
-                  bordercolor: "black",
-                  x: "(main_w/2-text_w/2)",
-                  y: "main_h-150",
-                  shadowcolor: "black",
-                  shadowx: 3,
-                  shadowy: 3,
-                  // enable: `between(t,02,01)`,
-                  // enable: `between(t,${item.timestamp},${
-                  //   Number(item.timestamp) + 2
-                  // })`,
-                },
-              };
-            });
-            resolve(drawtextFilters);
-          } catch (err) {
-            reject(err);
-          } finally {
-            fs.unlinkSync(audioSegmentPath);
-          }
-        })
-        .on("error", (err) => {
-          console.error(`Error creating audio segment ${index + 1}:`, err);
-          reject(err);
-        });
+    words.forEach((word) => {
+      if ((currentLine + word).length <= maxLength) {
+        currentLine += `${word} `;
+      } else {
+        lines.push(currentLine.trim());
+        currentLine = `${word} `;
+      }
     });
+
+    if (currentLine.length > 0) {
+      lines.push(currentLine.trim());
+    }
+
+    return lines.join("\n");
+  }
+  getTranscription(srtFilePath, startTime, segmentDuration) {
+    const srtContent = JSON.parse(fs.readFileSync(srtFilePath, "utf-8"));
+    let transcriptions = [];
+    srtContent.segments.map((block) => {
+      if (
+        Math.floor(block.start) >= startTime &&
+        Math.ceil(block.end) <= startTime + segmentDuration
+      ) {
+        const text = this.splitText(block.text.trim());
+        transcriptions.push({
+          start: block.start,
+          end: block.end,
+          text: text,
+        });
+      }
+    });
+    return transcriptions;
   }
 
   async createSegment(
@@ -104,16 +82,33 @@ class ffmpegService {
     outputFilePath,
     index,
     audioPath,
-    audioVolume = 0.15,
-    outputAudio
+    audioVolume = 0.8,
+    srtPath
   ) {
-    // let drawtextFilters = await this.syncTranscriptions(
-    //   startTime,
-    //   segmentDuration,
-    //   outputAudio,
-    //   index
-    // );
-    // console.log(drawtextFilters);
+    const subtitles = this.getTranscription(
+      path.join(this.__dirname, `transcription/${srtPath}`),
+      startTime,
+      segmentDuration
+    );
+    const drawtextFilters = subtitles.map((subtitle) => ({
+      filter: "drawtext",
+      options: {
+        fontfile: "Montserrat-Bold",
+        text: subtitle.text,
+        fontsize: 48,
+        fontcolor: "yellow",
+        borderw: 2,
+        bordercolor: "black",
+        x: "(((main_w/2)-10)-((text_w/2)-10))",
+        y: "main_h-190",
+        shadowcolor: "black",
+        shadowx: 3,
+        shadowy: 3,
+        enable: `between(t,${subtitle.start - startTime},${
+          subtitle.end - startTime
+        })`,
+      },
+    }));
     return new Promise((resolve, reject) => {
       ffmpeg(videoPath)
         .setStartTime(startTime)
@@ -134,7 +129,7 @@ class ffmpegService {
             outputs: "aout",
           },
         ])
-        // .videoFilters([...drawtextFilters])
+        .videoFilters([...drawtextFilters])
         .outputOptions([
           "-map",
           "0:v",
@@ -160,8 +155,8 @@ class ffmpegService {
     });
   }
 
-  async splitVideo(videoPath, outputAudio) {
-    const segmentDuration = 59;
+  async splitVideo(videoPath, srtPath) {
+    const segmentDuration = 60;
     const outputDir = path.resolve(this.__dirname, "shorts");
     const audioMusicDir = path.resolve(this.__dirname, "audios/default.mp3");
 
@@ -192,18 +187,19 @@ class ffmpegService {
             i,
             audioMusicDir,
             0.25,
-            outputAudio
+            srtPath
           ).catch((err) => {
             console.error(`Error processing segment ${i + 1}`, err);
           });
           segmentPromises.push(segmentPromise);
+
+          if (segmentPromises.length === 2 || i === numSegments - 1) {
+            await Promise.all(segmentPromises);
+            segmentPromises.length = 0;
+          }
         }
-        Promise.all(segmentPromises)
-          .then(() => {
-            console.log("All shorts created successfully.");
-            resolve();
-          })
-          .catch(reject);
+        console.log("All shorts created successfully.");
+        resolve();
       });
     });
   }
