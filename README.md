@@ -16,6 +16,10 @@ Este projeto automatiza a transformação de vídeos do YouTube em shorts. Ele a
 - Adiciona a descrição, tags, nome do shorts e creditos
 - Faz o Upload de todos os Shorts para um canal do Youtube usando a YouTube Data API V3. OBS: Existe um limite de upload de 25 videos por dia via API
 
+## Próximos Passos
+
+- Refatorar o código e adicionar mais customizações
+
 ## Contribuições
 
 Contribuições são bem-vindas! Sinta-se à vontade para abrir uma issue ou enviar um pull request.
