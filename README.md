@@ -13,30 +13,8 @@ Este projeto automatiza a transformação de vídeos do YouTube em shorts. Ele a
 - Coleta descrições, tags, nome do canal e título do vídeo
 - Utiliza o serviço de Speech-to-Text do Whisper para gerar transcrições
 - Adiciona música de fundo aos shorts
-
-## Como Usar
-
-1. Clone este repositório
-    ```
-    git clone https://github.com/seuusuario/shorts-generator.git
-    ```
-
-2. Navegue até o diretório do projeto
-    ```
-    cd shorts-generator
-    ```
-
-3. Instale as dependências
-    ```
-    npm install
-    ```
-
-4. Configure as credenciais do Google Speech-to-Text
-
-5. Execute o projeto
-    ```
-    npm start
-    ```
+- Adiciona a descrição, tags, nome do shorts e creditos
+- Faz o Upload de todos os Shorts para um canal do Youtube usando a YouTube Data API V3. OBS: Existe um limite de upload de 25 videos por dia via API
 
 ## Contribuições
 

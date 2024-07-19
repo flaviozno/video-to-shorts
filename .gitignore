@@ -4,3 +4,4 @@ src/transcription/*
 *.mp4
 *.mp3
 *.wav
+src/credentials/*

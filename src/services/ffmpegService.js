@@ -100,7 +100,7 @@ class ffmpegService {
         borderw: 2,
         bordercolor: "black",
         x: "(((main_w/2)-10)-((text_w/2)-10))",
-        y: "main_h-190",
+        y: "(main_h/2)-50",
         shadowcolor: "black",
         shadowx: 3,
         shadowy: 3,
@@ -129,7 +129,25 @@ class ffmpegService {
             outputs: "aout",
           },
         ])
-        .videoFilters([...drawtextFilters])
+        .videoFilters([
+          ...drawtextFilters,
+          {
+            filter: "fade",
+            options: {
+              type: "in",
+              start_time: 0,
+              duration: 2,
+            },
+          },
+          {
+            filter: "fade",
+            options: {
+              type: "out",
+              start_time: segmentDuration - 2,
+              duration: 2,
+            },
+          },
+        ])
         .outputOptions([
           "-map",
           "0:v",
@@ -155,8 +173,8 @@ class ffmpegService {
     });
   }
 
-  async splitVideo(videoPath, srtPath, videoId, channelName) {
-    const segmentDuration = 60;
+  async splitVideo(videoPath, srtPath, shortName) {
+    const segmentDuration = 59;
     const outputDir = path.resolve(this.__dirname, "shorts");
     const audioMusicDir = path.resolve(this.__dirname, "audios/default.mp3");
 
@@ -180,7 +198,7 @@ class ffmpegService {
           const startTime = i * segmentDuration;
           const outputFilePath = path.join(
             outputDir,
-            `${channelName}_${videoId}_${i + 1}.mp4`
+            `${shortName}_${i + 1}.mp4`
           );
           const segmentPromise = this.createSegment(
             videoPath,
@@ -202,7 +220,7 @@ class ffmpegService {
           }
         }
         console.log("All shorts created successfully.");
-        resolve();
+        resolve(numSegments);
       });
     });
   }

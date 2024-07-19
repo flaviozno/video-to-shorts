@@ -1,5 +1,7 @@
 import downloadService from "./services/downloadService.js";
+import uploadService from "./services/uploadService.js";
 import ffmpegService from "./services/ffmpegService.js";
+import oauthService from "./services/oauthService.js";
 import { Whisper } from "./services/whisper.js";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -7,8 +9,12 @@ import { fileURLToPath } from "url";
 const main = async () => {
   const dir = path.dirname(fileURLToPath(import.meta.url));
   try {
+    const oauth = new oauthService(dir);
+    await oauth.init();
+    const upload = new uploadService(dir, oauth.youtube);
+
     const download = new downloadService(
-      "https://www.youtube.com/@theblacklistemportugues/videos",
+      "https://www.youtube.com/@ossocios/videos",
       dir
     );
     const ffmpeg = new ffmpegService(dir);
@@ -35,13 +41,24 @@ const main = async () => {
     console.log("sync audio end");
 
     console.log("split video starts");
-    await ffmpeg.splitVideo(
+    let shortName = latestVideoId + "_" + details.channelName;
+    let shortsCount = await ffmpeg.splitVideo(
       syncedVideoPath,
       srtPath,
-      latestVideoId,
-      details.channelName
+      shortName
     );
     console.log("split video end");
+    console.log("upload videos starts");
+    for (let i = 0; i < shortsCount; i++) {
+      await upload.uploadVideo(
+        `${shortName}_${i + 1}.mp4`,
+        `Já imaginou libertar o cérebro do corpo e alcançar a imortalidade? 🌟 Dr. Kutchera, seu brilhantismo em teoria dos números é inigualável. Nesta jornada, você não apenas andará e falará com facilidade, mas também poderá cantar e dançar novamente. Vamos juntos tocar o rosto de Deus e explorar os limites da nossa existência. Prepare-se para uma viagem emocionante, onde mente e conhecimento são nossos maiores tesouros. 🌌🔬. ⚠️⚠️ Esse vídeo foi gerado por uma IA e um código em NODEJS apenas para questões de APRENDIZADO!!! Esse canal, NÃO sera MONETIZADO e todos os CRÉDITOS são de ${details.channelName} pelo EP: ${details.title}⚠️⚠️`,
+        `Shorts de  ${details.channelName}.`,
+        details.tags,
+        "public"
+      );
+    }
+    console.log("upload videos end");
     await download.removeFilesByName(latestVideoId);
   } catch (error) {
     console.error("Erro durante o processamento:", error);
